@@ -18,6 +18,9 @@ RUN pacman -S --noconfirm --needed libreoffice-fresh
 # Install owncloud
 RUN pacman -S --noconfirm --needed owncloud
 
+# workaround for https://github.com/owncloud/core/issues/12893
+RUN mkdir /etc/webapps/owncloud/data
+
 # Install owncloud addons
 RUN pacman -S --noconfirm --needed owncloud-app-bookmarks
 RUN pacman -S --noconfirm --needed owncloud-app-calendar
