@@ -1,5 +1,8 @@
-FROM l3iggs/lamp
-MAINTAINER l3iggs <l3iggs@live.com>
+#ARG MYARCH
+FROM yhfu/lamp-$MYARCH
+MAINTAINER yhfu <yhfudev@gmail.com>
+
+
 # Report issues here: https://github.com/l3iggs/docker-owncloud/issues
 # Say thanks by adding a star or a comment here: https://registry.hub.docker.com/u/l3iggs/owncloud/
 
@@ -14,7 +17,7 @@ ENV MAX_UPLOAD_SIZE 30G
 ENV TARGET_SUBDIR owncloud
 
 # remove info.php
-RUN rm /srv/http/info.php
+RUN rm -f /srv/http/info.php
 
 # to mount SAMBA shares: 
 RUN pacman -S --noconfirm --needed smbclient
@@ -24,6 +27,11 @@ RUN pacman -S --noconfirm --needed ffmpeg
 
 # for document previews
 RUN pacman -S --noconfirm --needed libreoffice-fresh
+
+# Install php-ldap
+RUN sudo pacman -Suy --noconfirm --needed php-ldap
+# enable ldap in php
+RUN sudo sed -i 's,;extension=ldap.so,extension=ldap.so,g' /etc/php/php.ini
 
 # Install owncloud
 RUN pacman -S --noconfirm --needed owncloud
