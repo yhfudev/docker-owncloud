@@ -15,9 +15,13 @@ ENV START_APACHE true
 ENV START_MYSQL true
 ENV MAX_UPLOAD_SIZE 30G
 ENV TARGET_SUBDIR owncloud
+ENV OC_VERSION '*'
 
 # remove info.php
 RUN rm -f /srv/http/info.php
+
+# to to run cron as HTTP
+RUN pacman -S --noconfirm --needed sudo
 
 # to mount SAMBA shares: 
 RUN pacman -S --noconfirm --needed smbclient
@@ -34,9 +38,11 @@ RUN sudo pacman -Suy --noconfirm --needed php-ldap
 RUN sudo sed -i 's,;extension=ldap.so,extension=ldap.so,g' /etc/php/php.ini
 
 # Install owncloud
-RUN pacman -S --noconfirm --needed owncloud
+RUN pacman -Sw --noconfirm --needed owncloud
+RUN pacman -U --noconfirm --needed /var/cache/pacman/pkg/owncloud-${OC_VERSION}-any.pkg.tar.xz
+
 # add our custom config.php
-ADD config.php /usr/share/webapps/owncloud/config/config.php
+ADD configs/oc-config.php /usr/share/webapps/owncloud/config/config.php
 
 # fixup the permissions (because appairently the package maintainer can't get it right)
 ADD fixPerms.sh /root/fixPerms.sh
@@ -61,6 +67,10 @@ RUN sed -i "s,php_value upload_max_filesize 513M,php_value upload_max_filesize $
 RUN sed -i "s,php_value post_max_size 513M,php_value post_max_size ${MAX_UPLOAD_SIZE},g" /usr/share/webapps/owncloud/.htaccess
 RUN sed -i 's,<IfModule mod_php5.c>,<IfModule mod_php5.c>\nphp_value output_buffering Off,g' /usr/share/webapps/owncloud/.htaccess
 
+# set up PHP for owncloud
+RUN sed -i 's/open_basedir = \/srv\/http\/:\/home\/:\/tmp\/:\/usr\/share\/pear\/:\/usr\/share\/webapps\//open_basedir = \/srv\/http\/:\/home\/:\/tmp\/:\/usr\/share\/pear\/:\/usr\/share\/webapps\/:\/etc\/webapps\//g' /etc/php/php.ini  # fixes issue with config not editable and occ errors (Issue #44)
+RUN sed -i 's/;extension=posix.so/extension=posix.so/g' /etc/php/php.ini  # needed for cron / occ (Issue #42)
+
 # setup Apache for owncloud
 RUN cp /etc/webapps/owncloud/apache.example.conf /etc/httpd/conf/extra/owncloud.conf
 RUN sed -i '/<VirtualHost/,/<\/VirtualHost>/d' /etc/httpd/conf/extra/owncloud.conf
@@ -77,6 +87,13 @@ RUN chown -R http:http /usr/share/webapps/owncloud/
 
 # place your ssl cert files in here. name them server.key and server.crt
 #VOLUME ["/https"]
+
+# Enable cron (Issue #42)
+RUN pacman -S --noconfirm --needed cronie
+RUN systemctl enable cronie.service
+ADD configs/cron.conf /etc/oc-cron.conf
+RUN crontab /etc/oc-cron.conf
+RUN systemctl start cronie.service; exit 0 # force success due to issue with cronie start https://goo.gl/DcGGb
 
 # start servers
 CMD ["/root/startServers.sh"]
