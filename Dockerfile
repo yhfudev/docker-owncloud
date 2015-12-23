@@ -1,5 +1,5 @@
 #ARG MYARCH
-FROM FROM yhfudev/docker-lamp
+FROM yhfudev/docker-lamp
 MAINTAINER yhfu <yhfudev@gmail.com>
 
 
