@@ -1,5 +1,5 @@
 #ARG MYARCH
-FROM yhfu/lamp-$MYARCH
+FROM yhfudev/docker-lamp
 MAINTAINER yhfu <yhfudev@gmail.com>
 
 
@@ -7,7 +7,7 @@ MAINTAINER yhfu <yhfudev@gmail.com>
 # Say thanks by adding a star or a comment here: https://registry.hub.docker.com/u/l3iggs/owncloud/
 
 # upldate package list
-RUN pacman -Sy
+RUN pacman -Syy
 
 # set environmnt variable defaults
 ENV REGENERATE_SSL_CERT false
@@ -97,3 +97,10 @@ RUN systemctl start cronie.service; exit 0 # force success due to issue with cro
 
 # start servers
 CMD ["/root/startServers.sh"]
+
+USER docker
+RUN yaourt -Syyua --noconfirm --needed \
+    owncloud-app-mozilla_sync \
+    owncloud-app-notes-git \
+    owncloud-app-news-git
+USER root
